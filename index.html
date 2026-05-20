@@ -89,10 +89,8 @@ input,textarea,button,select{font-family:inherit;font-size:inherit;color:inherit
 .toggle button.ng.active{background:#dc2626;color:#fff;border-color:#dc2626;box-shadow:0 1px 4px rgba(220,38,38,.3)}
 .toggle button:disabled{opacity:.35;cursor:not-allowed}
 
-/* 打卡按钮 */
-.time-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:6px 0;border-radius:6px;font-size:12px;font-weight:600;background:#fff;border:1.5px solid #e5e7eb;color:#6b7280;transition:.15s}
-.time-btn.active{background:#1e40af;color:#fff;border-color:#1e40af;box-shadow:0 1px 4px rgba(30,64,175,.3)}
-.time-btn:disabled{opacity:.35;cursor:not-allowed}
+/* 整行检查列（去掉打卡后单列展开） */
+.check-col.full{grid-column:1 / -1}
 
 /* 异常 */
 .abnormal{margin:8px 0 0 28px}
@@ -217,16 +215,12 @@ DATA.forEach((g, gi) => {
       <div class="title"><span class="n">${ii+1}.</span><span>${it.content}</span></div>
       <div class="std">📋 ${it.std || '—'}</div>
       <div class="checks">
-        <div class="check-col">
-          <div class="lab"><span class="icon">🔍</span>生产前检查</div>
+        <div class="check-col full">
+          <div class="lab"><span class="icon">🔍</span>检查结果</div>
           <div class="toggle">
             <button class="ok" onclick="setCheck('${itemId}','pre','ok',this)">√ 合格</button>
             <button class="ng" onclick="setCheck('${itemId}','pre','ng',this)">× 异常</button>
           </div>
-        </div>
-        <div class="check-col">
-          <div class="lab"><span class="icon">⏱</span>过程检查时间</div>
-          <button class="time-btn" onclick="stampTime('${itemId}',this)">打卡</button>
         </div>
       </div>
       <div class="abnormal" id="${itemId}_ab">
@@ -273,16 +267,6 @@ function setCheck(id, kind, val, btn){
   updateProgress();
 }
 
-function stampTime(id, btn){
-  const now = new Date();
-  const t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  state[id] = state[id] || {};
-  state[id].proc = t;
-  btn.textContent = '⏱ ' + t;
-  btn.classList.add('active');
-  updateProgress();
-}
-
 function updateProgress(){
   let done = 0;
   DATA.forEach((g, gi) => {
@@ -290,7 +274,7 @@ function updateProgress(){
     g.items.forEach((it, ii) => {
       const id = `g${gi}_i${ii}`;
       const s = state[id] || {};
-      if (!!s.pre && !!s.proc) { gDone++; done++; }
+      if (!!s.pre) { gDone++; done++; }
     });
     const badge = document.getElementById('badge_'+gi);
     badge.textContent = gDone + '/' + g.items.length;
