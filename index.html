@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>班组长生产过程检查表</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html,body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;color:#1f2937;background:#f3f4f6;-webkit-font-smoothing:antialiased}
+input,textarea,button,select{font-family:inherit;font-size:inherit;color:inherit;border:none;outline:none;background:transparent}
+.app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:96px;background:#f3f4f6}
+
+/* 顶 nav */
+.navbar{position:sticky;top:0;z-index:50;background:linear-gradient(135deg,#1e40af 0%,#0e7490 100%);color:#fff;padding:14px 16px 12px;box-shadow:0 2px 8px rgba(30,64,175,.18)}
+.navbar h1{font-size:17px;font-weight:600;letter-spacing:.5px;text-align:center}
+.navbar .sub{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:11px;opacity:.85}
+
+/* 顶 progress */
+.progress-bar{height:4px;background:rgba(255,255,255,.18)}
+.progress-bar .fill{height:100%;background:#34d399;width:0%;transition:width .3s}
+.progress-tip{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.92)}
+
+/* 信息卡 */
+.card{background:#fff;margin:10px 12px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card.info-card{overflow:visible}
+.card.group,.card.summary,.card.hygiene-card{overflow:hidden}
+.card-title{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fafafa;border-bottom:1px solid #f1f5f9;font-weight:600;font-size:14px}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:#1e40af;display:inline-block;margin-right:8px}
+
+.field-row{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid #f3f4f6}
+.field-row:last-child{border-bottom:none}
+.field-row label{flex:0 0 92px;color:#6b7280;font-size:13px}
+.field-row input,.field-row select,.field-row textarea{flex:1;padding:6px 8px;background:#f9fafb;border-radius:6px;font-size:13.5px}
+.field-row select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%236b7280' d='M0 0l5 6 5-6z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:26px}
+.field-row textarea{min-height:48px;resize:none}
+
+/* 多选下拉 */
+.multi-pick{flex:1;position:relative}
+.multi-pick .picked{min-height:30px;padding:4px 26px 4px 6px;background:#f9fafb;border-radius:6px;font-size:13px;cursor:pointer;display:flex;flex-wrap:wrap;gap:4px;align-items:center;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%236b7280' d='M0 0l5 6 5-6z'/></svg>");background-repeat:no-repeat;background-position:right 10px center}
+.multi-pick .picked .ph{color:#9ca3af}
+.multi-pick .tag{padding:2px 7px;border-radius:10px;background:#dbeafe;color:#1e40af;font-size:11.5px;display:inline-flex;align-items:center;gap:4px}
+.multi-pick .tag .x{cursor:pointer;font-size:13px;line-height:1;color:#1e40af;opacity:.6}
+.multi-pick .panel{display:none;margin-top:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.multi-pick.open .panel{display:block}
+.multi-pick .opt{padding:9px 12px;font-size:13.5px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f3f4f6;cursor:pointer}
+.multi-pick .opt:last-child{border-bottom:none}
+.multi-pick .opt .box{width:16px;height:16px;border:1.5px solid #d1d5db;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.multi-pick .opt.on .box{background:#1e40af;border-color:#1e40af}
+.multi-pick .opt.on .box::after{content:"✓"}
+.multi-pick .opt.muted{color:#9ca3af;font-style:italic}
+
+/* 分组卡 */
+.group{margin:10px 12px;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+.group-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;user-select:none}
+.group-head .left{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.group-head .idx{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700}
+.group-head .right{display:flex;align-items:center;gap:8px;color:#6b7280;font-size:12px}
+.group-head .badge{padding:2px 8px;border-radius:10px;font-size:11px;background:#fef3c7;color:#b45309}
+.group-head .badge.ok{background:#dcfce7;color:#15803d}
+.group-head .chev{transition:transform .2s;color:#9ca3af}
+.group.open .chev{transform:rotate(180deg)}
+.group-body{display:none;border-top:1px solid #f3f4f6}
+.group.open .group-body{display:block}
+
+.item{padding:12px 14px;border-bottom:1px solid #f8fafc}
+.item:last-child{border-bottom:none}
+.item .title{display:flex;align-items:flex-start;gap:6px;font-size:13.5px;color:#111827;line-height:1.5;font-weight:500}
+.item .title .n{flex:0 0 22px;color:#9ca3af;font-weight:400}
+.item .std{margin:6px 0 10px 28px;padding:6px 9px;border-left:2px solid #93c5fd;background:#eff6ff;color:#475569;font-size:11.5px;line-height:1.5;border-radius:0 4px 4px 0}
+
+/* 双列检查 */
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-left:28px;margin-top:8px}
+.check-col{background:#f9fafb;border-radius:8px;padding:8px}
+.check-col .lab{font-size:11px;color:#6b7280;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.check-col .lab .icon{font-size:11px}
+/* 拍照 */
+.photos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.photo-thumb{position:relative;width:64px;height:64px;border-radius:6px;overflow:hidden;border:1px solid #fed7aa;background:#fff}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .del{position:absolute;top:0;right:0;width:18px;height:18px;background:rgba(0,0,0,.6);color:#fff;border-radius:0 0 0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer}
+.photo-add{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border-radius:6px;border:1.5px dashed #fb923c;background:#fff7ed;color:#ea580c;font-size:11px;cursor:pointer}
+.photo-add .ic{font-size:18px;line-height:1}
+.photo-add input{display:none}
+
+/* √/× 开关 */
+.toggle{display:flex;gap:6px}
+.toggle button{flex:1;padding:6px 0;border-radius:6px;font-size:12px;font-weight:600;border:1.5px solid #e5e7eb;background:#fff;color:#9ca3af;transition:.15s}
+.toggle button.ok.active{background:#16a34a;color:#fff;border-color:#16a34a;box-shadow:0 1px 4px rgba(22,163,74,.3)}
+.toggle button.ng.active{background:#dc2626;color:#fff;border-color:#dc2626;box-shadow:0 1px 4px rgba(220,38,38,.3)}
+.toggle button:disabled{opacity:.35;cursor:not-allowed}
+
+/* 打卡按钮 */
+.time-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:6px 0;border-radius:6px;font-size:12px;font-weight:600;background:#fff;border:1.5px solid #e5e7eb;color:#6b7280;transition:.15s}
+.time-btn.active{background:#1e40af;color:#fff;border-color:#1e40af;box-shadow:0 1px 4px rgba(30,64,175,.3)}
+.time-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* 异常 */
+.abnormal{margin:8px 0 0 28px}
+.abnormal .a-toggle{display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-size:12px;font-weight:500;padding:4px 8px;border-radius:6px;background:#fef2f2;cursor:pointer}
+.abnormal textarea{display:none;margin-top:6px;width:100%;padding:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:12.5px;line-height:1.5;min-height:54px;resize:vertical}
+.abnormal .photos{display:none}
+.abnormal.open textarea{display:block}
+.abnormal.open .photos{display:flex}
+
+/* 底部固定 */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;border-top:1px solid #e5e7eb;box-shadow:0 -2px 8px rgba(0,0,0,.04);z-index:40}
+.bottom-bar button{flex:1;padding:11px 0;border-radius:8px;font-weight:600;font-size:14px}
+.btn-save{background:#fff;color:#1e40af;border:1.5px solid #1e40af}
+.btn-submit{background:linear-gradient(135deg,#1e40af,#0e7490);color:#fff;box-shadow:0 2px 8px rgba(30,64,175,.3)}
+
+/* 总结 */
+.summary textarea{width:100%;padding:10px 12px;background:#f9fafb;border-radius:8px;font-size:13.5px;line-height:1.5;min-height:80px}
+
+/* 卫生 toggle */
+.hygiene{padding:14px}
+.hygiene-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.hygiene-opts button{padding:10px 0;border-radius:8px;background:#f9fafb;border:1.5px solid #e5e7eb;color:#6b7280;font-size:13px;font-weight:500}
+.hygiene-opts button.active{background:#16a34a;color:#fff;border-color:#16a34a}
+.hygiene-opts button.warn.active{background:#f59e0b;color:#fff;border-color:#f59e0b}
+.hygiene-opts button.bad.active{background:#dc2626;color:#fff;border-color:#dc2626}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="navbar">
+    <h1>班组长生产过程检查表</h1>
+    <div class="sub"><span id="curDate"></span><span>·</span><span>中频炉车间</span></div>
+  </div>
+  <div class="progress-bar"><div class="fill" id="progFill"></div></div>
+  <div class="progress-tip">
+    <span>完成进度</span>
+    <span><b id="progDone">0</b>/<span id="progTotal">0</span> 项</span>
+  </div>
+
+  <!-- 头部信息 -->
+  <div class="card info-card">
+    <div class="card-title"><span><span class="dot"></span>基本信息</span></div>
+    <div class="field-row"><label>日期时间</label><input id="f_date" type="datetime-local"></div>
+    <div class="field-row"><label>生产班组</label>
+      <select id="f_team">
+        <option value="">-- 请选择 --</option>
+        <option value="day">白班</option>
+        <option value="night">晚班</option>
+      </select>
+    </div>
+    <div class="field-row"><label>班组成员</label>
+      <div class="multi-pick" id="mp_members">
+        <div class="picked" onclick="this.parentElement.classList.toggle('open')"><span class="ph">点击选择 (多选)</span></div>
+        <div class="panel"></div>
+      </div>
+    </div>
+    <div class="field-row"><label>检查人(班组长)</label>
+      <select id="f_leader">
+        <option value="">-- 请选择 --</option>
+        <option value="" disabled>(姓名待补)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 分组项 -->
+  <div id="groups"></div>
+
+  <!-- 接班卫生 -->
+  <div class="card">
+    <div class="card-title"><span><span class="dot"></span>接班(上班)卫生情况</span></div>
+    <div class="hygiene">
+      <div style="font-size:12.5px;color:#6b7280">交接区域整洁度评价</div>
+      <div class="hygiene-opts">
+        <button data-h="ok">良好</button>
+        <button class="warn" data-h="warn">一般</button>
+        <button class="bad" data-h="bad">差(需整改)</button>
+      </div>
+      <textarea id="f_hygiene_note" style="margin-top:10px;width:100%;padding:8px;background:#f9fafb;border-radius:6px;font-size:13px;min-height:50px" placeholder="如评为一般/差，请说明问题点"></textarea>
+    </div>
+  </div>
+
+  <!-- 班组总结 -->
+  <div class="card summary">
+    <div class="card-title"><span><span class="dot"></span>本班组总结</span></div>
+    <div style="padding:12px 14px">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:6px">检查发现的问题汇总 / 处置结果 / 生产结束卫生</div>
+      <textarea id="f_summary" placeholder="按时间顺序简要记录..."></textarea>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-save" onclick="saveDraft()">保存草稿</button>
+    <button class="btn-submit" onclick="submitForm()">提交</button>
+  </div>
+</div>
+
+<script>
+const DATA = [{"cat": "人员安全", "items": [{"content": "劳动防护用品正确佩戴", "std": "正确佩戴劳动防护用品", "pre_na": false, "proc_na": false}, {"content": "酒精检测", "std": "酒精浓度≤20mg/100ml", "pre_na": false, "proc_na": true}]}, {"cat": "中频炉电源柜", "items": [{"content": "异味、异响、打火，发黑", "std": "无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": true}]}, {"cat": "中频炉控制柜", "items": [{"content": "异味、异响、打火，发黑", "std": "无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": true}, {"content": "水管漏水", "std": "无漏水情况", "pre_na": false, "proc_na": false}]}, {"cat": "计量罐", "items": [{"content": "温度，压力，进出料阀门接头位置", "std": "温度≥50℃，无漏气点，进出料接头无漏点", "pre_na": false, "proc_na": false}]}, {"cat": "中频炉炉体", "items": [{"content": "胶木立柱螺帽、顶块、位置", "std": "螺帽和顶块无缺损，位置无明显偏移", "pre_na": false, "proc_na": false}, {"content": "感应圈漏水、线圈间距(打火)、胶泥", "std": "线圈无漏水，间距合理，胶泥无明显脱落，没有暴露打炉料情况", "pre_na": false, "proc_na": false}, {"content": "炉前坑检查", "std": "无渣或其他杂质堵塞，无积水。干净、干燥", "pre_na": false, "proc_na": false}, {"content": "水冷电缆本体和接头", "std": "本体无破损漏点，接头牢固无漏点", "pre_na": false, "proc_na": false}]}, {"cat": "中频炉2台冷却塔", "items": [{"content": "水泵压力、异响", "std": "压力≥0.2MPA，无异响", "pre_na": false, "proc_na": false}, {"content": "风机是否启动，是否异响", "std": "正常启动状态，无异响", "pre_na": false, "proc_na": false}, {"content": "储水槽水位", "std": "标准水位线≥1米", "pre_na": false, "proc_na": false}, {"content": "整个管线和接头漏水", "std": "炉体-电容-冷却塔整个管路和接头无漏水情况", "pre_na": false, "proc_na": true}]}, {"cat": "中频炉电容", "items": [{"content": "电容接头处漏水", "std": "电容水管接头无漏水情况", "pre_na": false, "proc_na": false}]}, {"cat": "中频炉两套监控系统", "items": [{"content": "进出水口温度", "std": "进口温度＞出口温度，出口温度＜55℃", "pre_na": false, "proc_na": false}, {"content": "进出口压力", "std": "进口压力＞出口压力，出口压力越小越好", "pre_na": false, "proc_na": false}, {"content": "进出口流量", "std": "进口流量值＞出口流量值，流量差值≤进口流量的10%", "pre_na": false, "proc_na": false}]}, {"cat": "液压站", "items": [{"content": "漏油", "std": "无漏油情况", "pre_na": false, "proc_na": true}, {"content": "前后停是否正常", "std": "使用正常，无静止状态下自动进退的问题", "pre_na": false, "proc_na": false}]}, {"cat": "行车", "items": [{"content": "线缆和吊具", "std": "行车线缆，钢丝绳和吊带无明显破损", "pre_na": false, "proc_na": true}, {"content": "吊钩", "std": "防脱钩装置无缺损，正常使用", "pre_na": false, "proc_na": false}, {"content": "前后左右检查", "std": "遥控使用过程中方向键和功能为正常", "pre_na": false, "proc_na": false}]}, {"cat": "环保监控检查", "items": [{"content": "公共机检查", "std": "确保正常运行，发现死机等异常及时联系环保员", "pre_na": false, "proc_na": false}, {"content": "数采仪“数据标识”栏检查", "std": "确保正常运行，发现显示\"故障\"时及时联系环保员", "pre_na": false, "proc_na": false}, {"content": "配电箱异味、异响、打火，发黑，开关检查", "std": "开关正常开启。无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": false}, {"content": "稳压器、UPS不间断电源检查", "std": "确保稳压器和UPS不间断电源正常工作（亮绿灯）", "pre_na": false, "proc_na": false}, {"content": "环保监控室温度检查（空调）", "std": "夏季、冬季站房温度控制在24°", "pre_na": false, "proc_na": false}]}, {"cat": "黄磷罐区", "items": [{"content": "热水槽循环泵压力，水位，温度", "std": "压力≥0.1MPA，水位≥1m，温度≥70℃", "pre_na": false, "proc_na": false}, {"content": "黄磷罐水位，黄磷位，温度", "std": "水位高度-磷位高度≥40cm，温度≥60℃", "pre_na": false, "proc_na": false}, {"content": "电源柜异味，异响，打火，发黑", "std": "无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": false}]}, {"cat": "氮气瓶", "items": [{"content": "接头漏气和防护链检查", "std": "接头牢固无漏气，防护链处于正确防护状态", "pre_na": false, "proc_na": false}]}, {"cat": "环保设备控制柜", "items": [{"content": "指示灯、电流、电压、输出电流", "std": "电流、电源指示灯正常,直流电流:90-100mA,直流电压≥45kV", "pre_na": false, "proc_na": false}]}, {"cat": "环保风机电源柜", "items": [{"content": "电流数值,异味、异响、打火，发黑", "std": "当前电流≤40A，无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": false}]}, {"cat": "环保除尘设备", "items": [{"content": "异响，打火发黑，废物箱可用空间，", "std": "无异响，无打火和发黑情况，底部废物箱可用空间充足", "pre_na": false, "proc_na": false}]}, {"cat": "环保设备变压器", "items": [{"content": "异响，打火，发黑", "std": "无异味，无异响，无打火和发黑情况", "pre_na": false, "proc_na": false}]}, {"cat": "环保风机", "items": [{"content": "异响，表面温度", "std": "无异响，电动机表面温度＜65℃", "pre_na": false, "proc_na": false}]}, {"cat": "模具", "items": [{"content": "缺损，正确使用", "std": "及时发现缺损情况。生产不同批次产品使用相应的模具。", "pre_na": false, "proc_na": false}]}, {"cat": "输磷速度", "items": [{"content": "检查控制输磷速度", "std": "控制输磷速度，控制小时排放浓度≤5mg/³", "pre_na": true, "proc_na": false}]}, {"cat": "样品", "items": [{"content": "标识牌及位置", "std": "样品和标识牌在正确的时间点，放置在规定的位置，无混淆。", "pre_na": true, "proc_na": false}]}, {"cat": "成品", "items": [{"content": "成品表面检查，标识牌及位置，", "std": "成品表面干净。标识牌在正确时间点，放置在规定位置，无混淆。", "pre_na": true, "proc_na": false}]}];
+
+// === 人员名单 ===
+const ROSTER = {
+  members: ['张玉华','詹青波','朱明海','郭生平','刘雷涛','李其民','张兴兵'],
+  leaders: ['张玉华','詹青波','朱明海','郭生平','刘雷涛'],
+};
+
+// 时间初始化
+function pad(n){return n<10?'0'+n:n}
+const now = new Date();
+document.getElementById('curDate').textContent = `${now.getMonth()+1}-${now.getDate()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+document.getElementById('f_date').value =
+  `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+// 渲染分组
+const groupsEl = document.getElementById('groups');
+let totalItems = 0;
+DATA.forEach((g, gi) => {
+  totalItems += g.items.length;
+  const items = g.items.map((it, ii) => {
+    const itemId = `g${gi}_i${ii}`;
+    return `
+    <div class="item" data-id="${itemId}">
+      <div class="title"><span class="n">${ii+1}.</span><span>${it.content}</span></div>
+      <div class="std">📋 ${it.std || '—'}</div>
+      <div class="checks">
+        <div class="check-col">
+          <div class="lab"><span class="icon">🔍</span>生产前检查</div>
+          <div class="toggle">
+            <button class="ok" onclick="setCheck('${itemId}','pre','ok',this)">√ 合格</button>
+            <button class="ng" onclick="setCheck('${itemId}','pre','ng',this)">× 异常</button>
+          </div>
+        </div>
+        <div class="check-col">
+          <div class="lab"><span class="icon">⏱</span>过程检查时间</div>
+          <button class="time-btn" onclick="stampTime('${itemId}',this)">打卡</button>
+        </div>
+      </div>
+      <div class="abnormal" id="${itemId}_ab">
+        <span class="a-toggle" onclick="this.parentElement.classList.toggle('open')">⚠️ 异常情况记录</span>
+        <textarea placeholder="发现时间 + 问题描述 + 处置结果"></textarea>
+        <div class="photos" id="${itemId}_photos">
+          <label class="photo-add">
+            <span class="ic">📷</span>
+            <span>拍照</span>
+            <input type="file" accept="image/*" capture="environment" multiple onchange="addPhotos('${itemId}', this)">
+          </label>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  groupsEl.insertAdjacentHTML('beforeend', `
+    <div class="group${gi===0?' open':''}" data-gid="${gi}">
+      <div class="group-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="left"><span class="idx">${gi+1}</span><span>${g.cat}</span></div>
+        <div class="right">
+          <span class="badge" id="badge_${gi}">0/${g.items.length}</span>
+          <span class="chev">▾</span>
+        </div>
+      </div>
+      <div class="group-body">${items}</div>
+    </div>
+  `);
+});
+document.getElementById('progTotal').textContent = totalItems;
+
+// 状态
+const state = {};
+
+function setCheck(id, kind, val, btn){
+  state[id] = state[id] || {};
+  state[id][kind] = val;
+  const wrap = btn.parentElement;
+  wrap.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (val==='ng') {
+    document.getElementById(id+'_ab').classList.add('open');
+  }
+  updateProgress();
+}
+
+function stampTime(id, btn){
+  const now = new Date();
+  const t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  state[id] = state[id] || {};
+  state[id].proc = t;
+  btn.textContent = '⏱ ' + t;
+  btn.classList.add('active');
+  updateProgress();
+}
+
+function updateProgress(){
+  let done = 0;
+  DATA.forEach((g, gi) => {
+    let gDone = 0;
+    g.items.forEach((it, ii) => {
+      const id = `g${gi}_i${ii}`;
+      const s = state[id] || {};
+      if (!!s.pre && !!s.proc) { gDone++; done++; }
+    });
+    const badge = document.getElementById('badge_'+gi);
+    badge.textContent = gDone + '/' + g.items.length;
+    badge.classList.toggle('ok', gDone === g.items.length);
+  });
+  document.getElementById('progDone').textContent = done;
+  document.getElementById('progFill').style.width = (done*100/totalItems).toFixed(1) + '%';
+}
+
+// 拍照
+function addPhotos(itemId, input){
+  const box = document.getElementById(itemId+'_photos');
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const t = document.createElement('div');
+      t.className = 'photo-thumb';
+      t.innerHTML = `<img src="${e.target.result}"><span class="del" onclick="this.parentElement.remove()">×</span>`;
+      box.insertBefore(t, box.querySelector('.photo-add'));
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+  // 自动展开异常区
+  document.getElementById(itemId+'_ab').classList.add('open');
+}
+
+// 班组长下拉填充
+(function fillLeader(){
+  const sel = document.getElementById('f_leader');
+  if (ROSTER.leaders.length === 0) return;
+  // 清掉占位
+  sel.innerHTML = '<option value="">-- 请选择 --</option>';
+  ROSTER.leaders.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n; sel.appendChild(o);
+  });
+})();
+
+// 班组成员多选
+(function initMembers(){
+  const wrap = document.getElementById('mp_members');
+  const panel = wrap.querySelector('.panel');
+  const picked = wrap.querySelector('.picked');
+  if (ROSTER.members.length === 0) {
+    panel.innerHTML = '<div class="opt muted"><span class="box"></span>(姓名待补，先在 ROSTER.members 填入)</div>';
+    return;
+  }
+  ROSTER.members.forEach(n => {
+    const opt = document.createElement('div');
+    opt.className = 'opt';
+    opt.innerHTML = `<span class="box"></span><span>${n}</span>`;
+    opt.onclick = (ev) => {
+      ev.stopPropagation();
+      opt.classList.toggle('on');
+      renderTags();
+    };
+    panel.appendChild(opt);
+  });
+  function renderTags(){
+    const picks = [...panel.querySelectorAll('.opt.on')].map(o=>o.textContent.trim());
+    if (picks.length === 0) {
+      picked.innerHTML = '<span class="ph">点击选择 (多选)</span>';
+    } else {
+      picked.innerHTML = picks.map(n => `<span class="tag">${n}<span class="x" data-n="${n}">×</span></span>`).join('');
+      picked.querySelectorAll('.x').forEach(x => {
+        x.onclick = (ev) => {
+          ev.stopPropagation();
+          const n = x.dataset.n;
+          [...panel.querySelectorAll('.opt.on')].find(o => o.textContent.trim() === n)?.classList.remove('on');
+          renderTags();
+        };
+      });
+    }
+    state._members = picks;
+  }
+  // 点外面收
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) wrap.classList.remove('open');
+  });
+})();
+
+// 卫生
+document.querySelectorAll('.hygiene-opts button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.hygiene-opts button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    state._hygiene = b.dataset.h;
+  };
+});
+
+function saveDraft(){
+  alert('草稿已保存到本地(demo)\n实际可对接飞书多维表 / 后端 API');
+}
+function submitForm(){
+  const done = parseInt(document.getElementById('progDone').textContent);
+  if (done < totalItems) {
+    if (!confirm(`还有 ${totalItems-done} 项未完成，确认提交？`)) return;
+  }
+  alert('提交成功(demo)\n建议接入飞书多维表 record-create');
+}
+
+updateProgress();
+</script>
+</body>
+</html>
