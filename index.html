@@ -92,13 +92,12 @@ input,textarea,button,select{font-family:inherit;font-size:inherit;color:inherit
 /* 整行检查列（去掉打卡后单列展开） */
 .check-col.full{grid-column:1 / -1}
 
-/* 异常 */
-.abnormal{margin:8px 0 0 28px}
-.abnormal .a-toggle{display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-size:12px;font-weight:500;padding:4px 8px;border-radius:6px;background:#fef2f2;cursor:pointer}
-.abnormal textarea{display:none;margin-top:6px;width:100%;padding:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:12.5px;line-height:1.5;min-height:54px;resize:vertical}
-.abnormal .photos{display:none}
-.abnormal.open textarea{display:block}
-.abnormal.open .photos{display:flex}
+/* 异常：默认隐藏，只有选"× 异常"才整体显示 */
+.abnormal{display:none;margin:8px 0 0 28px}
+.abnormal.open{display:block}
+.abnormal .a-toggle{display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-size:12px;font-weight:500;padding:4px 8px;border-radius:6px;background:#fef2f2}
+.abnormal textarea{display:block;margin-top:6px;width:100%;padding:8px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;font-size:12.5px;line-height:1.5;min-height:54px;resize:vertical}
+.abnormal .photos{display:flex}
 
 /* 底部固定 */
 .bottom-bar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;border-top:1px solid #e5e7eb;box-shadow:0 -2px 8px rgba(0,0,0,.04);z-index:40}
@@ -224,7 +223,7 @@ DATA.forEach((g, gi) => {
         </div>
       </div>
       <div class="abnormal" id="${itemId}_ab">
-        <span class="a-toggle" onclick="this.parentElement.classList.toggle('open')">⚠️ 异常情况记录</span>
+        <span class="a-toggle">⚠️ 异常情况记录</span>
         <textarea placeholder="发现时间 + 问题描述 + 处置结果"></textarea>
         <div class="photos" id="${itemId}_photos">
           <label class="photo-add">
@@ -261,8 +260,11 @@ function setCheck(id, kind, val, btn){
   const wrap = btn.parentElement;
   wrap.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  const ab = document.getElementById(id+'_ab');
   if (val==='ng') {
-    document.getElementById(id+'_ab').classList.add('open');
+    ab.classList.add('open');
+  } else {
+    ab.classList.remove('open');
   }
   updateProgress();
 }
