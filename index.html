@@ -371,12 +371,79 @@ document.querySelectorAll('.hygiene-opts button').forEach(b=>{
 function saveDraft(){
   alert('草稿已保存到本地(demo)\n实际可对接飞书多维表 / 后端 API');
 }
-function submitForm(){
+const WEBHOOK_URL = 'https://n8n.icecoke.xyz/webhook/h5-check';
+let submitting = false;
+
+// 映射表：H5 控件值 → Bitable select 字段值
+const TEAM_MAP = { day: '白班', night: '夜班' };
+const HYGIENE_MAP = { ok: '良', warn: '一般', bad: '差' };
+
+function collectPayload(){
+  const datetime = document.getElementById('f_date')?.value || '';
+  const teamRaw = document.getElementById('f_team')?.value || '';
+  const team = TEAM_MAP[teamRaw] || '';
+  const members = (state._members || []).join('、');
+  const inspector = document.getElementById('f_leader')?.value || '';
+  const hygiene_rating = HYGIENE_MAP[state._hygiene] || '';
+  const hygiene_remark = document.getElementById('f_hygiene_note')?.value || '';
+  const summary = document.getElementById('f_summary')?.value || '';
+
+  const items = [];
+  DATA.forEach((g, gi) => {
+    g.items.forEach((it, ii) => {
+      const id = `g${gi}_i${ii}`;
+      const s = state[id] || {};
+      if (!s.pre) return;
+      const status = s.pre === 'ok' ? '合格' : '异常';
+      const remark = document.querySelector(`#${id}_ab textarea`)?.value || '';
+      items.push({ category: g.cat, name: it.content, status, remark });
+    });
+  });
+
+  return { datetime, team, members, inspector, items, hygiene_rating, hygiene_remark, summary };
+}
+
+async function submitForm(){
+  if (submitting) return;
   const done = parseInt(document.getElementById('progDone').textContent);
   if (done < totalItems) {
     if (!confirm(`还有 ${totalItems-done} 项未完成，确认提交？`)) return;
   }
-  alert('提交成功(demo)\n建议接入飞书多维表 record-create');
+  const payload = collectPayload();
+  // 基本必填校验
+  if (!payload.datetime || !payload.team || !payload.inspector) {
+    alert('请先填日期时间、生产班组、检查人');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-submit');
+  submitting = true;
+  const origText = btn.textContent;
+  btn.textContent = '提交中…';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    btn.textContent = '✅ 已提交';
+    setTimeout(() => {
+      alert('提交成功，数据已存入飞书多维表');
+      btn.textContent = origText;
+      btn.disabled = false;
+      submitting = false;
+    }, 300);
+  } catch (e) {
+    btn.textContent = origText;
+    btn.disabled = false;
+    submitting = false;
+    if (confirm('提交失败：' + e.message + '\n点确定复制数据到剪贴板，方便发飞书给王经理补录。')) {
+      try { await navigator.clipboard.writeText(JSON.stringify(payload, null, 2)); alert('已复制'); } catch(_){}
+    }
+  }
 }
 
 updateProgress();
