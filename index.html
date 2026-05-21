@@ -389,6 +389,7 @@ function collectPayload(){
   const summary = document.getElementById('f_summary')?.value || '';
 
   const items = [];
+  const anomalyLines = [];
   DATA.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       const id = `g${gi}_i${ii}`;
@@ -396,11 +397,18 @@ function collectPayload(){
       if (!s.pre) return;
       const status = s.pre === 'ok' ? '合格' : '异常';
       const remark = document.querySelector(`#${id}_ab textarea`)?.value || '';
-      items.push({ category: g.cat, name: it.content, status, remark });
+      const category_index = gi + 1;
+      items.push({ category: g.cat, category_index, name: it.content, status, remark });
+      if (status === '异常') {
+        const tail = remark ? ` (${remark})` : '';
+        anomalyLines.push(`第${category_index}大项 ${g.cat}-${it.content}${tail}`);
+      }
     });
   });
+  const anomaly_summary = anomalyLines.join('\n');
+  const anomaly_count = anomalyLines.length;
 
-  return { datetime, team, members, inspector, items, hygiene_rating, hygiene_remark, summary };
+  return { datetime, team, members, inspector, items, anomaly_summary, anomaly_count, hygiene_rating, hygiene_remark, summary };
 }
 
 async function submitForm(){
