@@ -373,6 +373,38 @@ function saveDraft(){
 }
 const WEBHOOK_URL = 'https://n8n.icecoke.xyz/webhook/h5-check-v2';
 let submitting = false;
+let cooldownTimer = null;
+
+// === 防重提交配置 ===
+const COOLDOWN_SECONDS = 60;          // 提交成功后 60s 内禁止再交
+const DUP_GUARD_MINUTES = 5;          // localStorage 指纹去重窗口
+const LS_KEY_LAST_HASH = 'h5check:lastSubmitHash';
+const LS_KEY_LAST_TS   = 'h5check:lastSubmitTs';
+
+// 简单 UUID v4（不依赖 crypto.randomUUID，兼容旧 webview）
+function uuid4(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0;
+    const v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+// 简单 hash（djb2）— 用于 payload 指纹，不要求强抗碰撞
+function djb2(s){
+  let h=5381;
+  for(let i=0;i<s.length;i++){ h=((h<<5)+h) ^ s.charCodeAt(i); }
+  return (h>>>0).toString(16);
+}
+// 构造 payload 指纹（剔除 datetime / client_submit_id 等易变字段）
+function fingerprint(p){
+  const slim = {
+    team: p.team, members: p.members, inspector: p.inspector,
+    items: p.items, anomaly_summary: p.anomaly_summary,
+    hygiene_rating: p.hygiene_rating, hygiene_remark: p.hygiene_remark,
+    summary: p.summary,
+  };
+  return djb2(JSON.stringify(slim));
+}
 
 // 映射表：H5 控件值 → Bitable select 字段值
 const TEAM_MAP = { day: '白班', night: '夜班' };
@@ -423,6 +455,24 @@ function collectPayload(){
   return { datetime, team, members, inspector, items, anomaly_summary, anomaly_count, hygiene_rating, hygiene_remark, summary };
 }
 
+function startCooldown(btn, origText){
+  let left = COOLDOWN_SECONDS;
+  btn.disabled = true;
+  btn.textContent = `✅ 已提交 (${left}s)`;
+  if (cooldownTimer) clearInterval(cooldownTimer);
+  cooldownTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) {
+      clearInterval(cooldownTimer); cooldownTimer = null;
+      btn.disabled = false;
+      btn.textContent = origText;
+      submitting = false;
+    } else {
+      btn.textContent = `✅ 已提交 (${left}s)`;
+    }
+  }, 1000);
+}
+
 async function submitForm(){
   if (submitting) return;
   const done = parseInt(document.getElementById('progDone').textContent);
@@ -435,6 +485,21 @@ async function submitForm(){
     alert('请先填日期时间、生产班组、检查人');
     return;
   }
+
+  // === 指纹去重：5 分钟内同 payload 拒绝 ===
+  const fp = fingerprint(payload);
+  const lastHash = localStorage.getItem(LS_KEY_LAST_HASH);
+  const lastTs   = parseInt(localStorage.getItem(LS_KEY_LAST_TS) || '0', 10);
+  const ageMin   = (Date.now() - lastTs) / 60000;
+  if (lastHash === fp && ageMin < DUP_GUARD_MINUTES) {
+    const mins = Math.ceil(DUP_GUARD_MINUTES - ageMin);
+    alert(`这条记录刚交过（${Math.floor(ageMin)} 分钟前），\n如确实要再交一遍，请等 ${mins} 分钟后或修改内容。`);
+    return;
+  }
+
+  // 附加请求 ID（给 n8n 服务端去重留接口）
+  payload.client_submit_id = uuid4();
+  payload.client_fp = fp;
 
   const btn = document.querySelector('.btn-submit');
   submitting = true;
@@ -449,13 +514,13 @@ async function submitForm(){
       body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    btn.textContent = '✅ 已提交';
-    setTimeout(() => {
-      alert('提交成功，数据已存入飞书多维表');
-      btn.textContent = origText;
-      btn.disabled = false;
-      submitting = false;
-    }, 300);
+    // 落 localStorage 指纹
+    try {
+      localStorage.setItem(LS_KEY_LAST_HASH, fp);
+      localStorage.setItem(LS_KEY_LAST_TS, String(Date.now()));
+    } catch(_) {}
+    alert('提交成功，数据已存入飞书多维表');
+    startCooldown(btn, origText);
   } catch (e) {
     btn.textContent = origText;
     btn.disabled = false;
