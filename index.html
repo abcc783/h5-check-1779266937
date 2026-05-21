@@ -407,10 +407,13 @@ function collectPayload(){
       const remark = document.querySelector(`#${id}_ab textarea`)?.value || '';
       const category_index = gi + 1;
       const item_index = ii + 1;
-      items.push({ category: g.cat, category_index, name: it.content, item_index, status, remark });
+      // hack：把编号塞进 category / name 字段，让 n8n 旧拼接逻辑(category-name)直接输出"1人员安全-2酒精检测"
+      const labeledCategory = `${category_index}${g.cat}`;
+      const labeledName = `${item_index}${it.content}`;
+      items.push({ category: labeledCategory, category_index, name: labeledName, item_index, status, remark });
       if (status === '异常') {
-        const tail = remark ? `（${remark}）` : '';
-        anomalyLines.push(`${category_index}-${item_index} 异常${tail}`);
+        const tail = remark ? ` (${remark})` : '';
+        anomalyLines.push(`${labeledCategory}-${labeledName}${tail}`);
       }
     });
   });
