@@ -217,7 +217,7 @@ DATA.forEach((g, gi) => {
         <div class="check-col full">
           <div class="lab"><span class="icon">🔍</span>检查结果</div>
           <div class="toggle">
-            <button class="ok" onclick="setCheck('${itemId}','pre','ok',this)">√ 合格</button>
+            <button class="ok" onclick="setCheck('${itemId}','pre','ok',this)">√ 正常</button>
             <button class="ng" onclick="setCheck('${itemId}','pre','ng',this)">× 异常</button>
           </div>
         </div>
@@ -237,7 +237,7 @@ DATA.forEach((g, gi) => {
   }).join('');
 
   groupsEl.insertAdjacentHTML('beforeend', `
-    <div class="group${gi===0?' open':''}" data-gid="${gi}">
+    <div class="group open" data-gid="${gi}">
       <div class="group-head" onclick="this.parentElement.classList.toggle('open')">
         <div class="left"><span class="idx">${gi+1}</span><span>${g.cat}</span></div>
         <div class="right">
@@ -435,7 +435,7 @@ function collectPayload(){
       const id = `g${gi}_i${ii}`;
       const s = state[id] || {};
       if (!s.pre) return;
-      const status = s.pre === 'ok' ? '合格' : '异常';
+      const status = s.pre === 'ok' ? '正常' : '异常';
       const remark = document.querySelector(`#${id}_ab textarea`)?.value || '';
       const category_index = gi + 1;
       const item_index = ii + 1;
